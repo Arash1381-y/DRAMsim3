@@ -144,6 +144,15 @@ bool JedecDRAMSystem::AddTransaction(uint64_t hex_addr, bool is_write) {
     return ok;
 }
 
+
+bool JedecDRAMSystem::IsIdle() const {
+    for (const auto& ctrl: ctrls_) {
+        if (ctrl->QueueUsage() != 0) return false;
+    }
+
+    return true;
+}
+
 void JedecDRAMSystem::ClockTick() {
     for (size_t i = 0; i < ctrls_.size(); i++) {
         // look ahead and return earlier
