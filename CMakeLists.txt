@@ -43,6 +43,8 @@ add_library(dramsim3 SHARED
     src/simple_stats.cc
     src/timing.cc
     src/memory_system.cc
+        src/flexisim_stats.cc
+        src/flexisim_stats.h
 )
 
 if (THERMAL)

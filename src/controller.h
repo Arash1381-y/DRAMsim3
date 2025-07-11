@@ -1,7 +1,6 @@
 #ifndef __CONTROLLER_H
 #define __CONTROLLER_H
 
-#include <fstream>
 #include <map>
 #include <unordered_set>
 #include <vector>
@@ -10,6 +9,7 @@
 #include "common.h"
 #include "refresh.h"
 #include "simple_stats.h"
+#include "flexisim_stats.h"
 
 #ifdef THERMAL
 #include "thermal.h"
@@ -34,15 +34,16 @@ class Controller {
     // Stats output
     void PrintEpochStats();
     void PrintFinalStats();
-    void ResetStats() { simple_stats_.Reset(); }
+    void ResetStats() { flexisim_stats_.Reset(); }
     std::pair<uint64_t, int> ReturnDoneTrans(uint64_t clock);
+    FlexisimRunStat GetStatObject();
 
     int channel_id_;
 
    private:
     uint64_t clk_;
     const Config &config_;
-    SimpleStats simple_stats_;
+    FlexisimStats flexisim_stats_;
     ChannelState channel_state_;
     CommandQueue cmd_queue_;
     Refresh refresh_;

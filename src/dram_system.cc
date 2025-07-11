@@ -28,6 +28,8 @@ BaseDRAMSystem::BaseDRAMSystem(Config &config, const std::string &output_dir,
 #endif
 }
 
+
+
 int BaseDRAMSystem::GetChannel(uint64_t hex_addr) const {
     hex_addr >>= config_.shift_bits;
     return (hex_addr >> config_.ch_pos) & config_.ch_mask;
@@ -92,6 +94,45 @@ void BaseDRAMSystem::RegisterCallbacks(
     read_callback_ = read_callback;
     write_callback_ = write_callback;
 }
+
+
+FlexisimRunStat BaseDRAMSystem::GetFlexisimStats() const{
+    FlexisimRunStat totalStats = {0.0, 0, 0, 0.0}; // Initialize with zeros
+    double totalWeightedLatencySum = 0.0; // For weighted average of latency
+    size_t totalReadsAcrossAllControllers = 0; // For weighted average denominator
+
+    size_t numControllers = ctrls_.size();
+
+    // Iterate through each controller and accumulate their statistics
+    for (const auto& ctrl : ctrls_) {
+        const FlexisimRunStat currentStat = ctrl->GetStatObject();
+        totalStats.bandwidth_ += currentStat.bandwidth_;
+        totalStats.num_reads_ += currentStat.num_reads_;
+        totalStats.num_writes_ += currentStat.num_writes_;
+
+        // For weighted average of latency:
+        // Accumulate the sum of (avg_latency * num_reads)
+        totalWeightedLatencySum += currentStat.avg_read_latency_ * currentStat.num_reads_;
+        totalReadsAcrossAllControllers += currentStat.num_reads_;
+    }
+
+    // Calculate the average for each statistic
+    FlexisimRunStat avgStats;
+    avgStats.bandwidth_ = totalStats.bandwidth_ / numControllers;
+    avgStats.num_reads_ = totalStats.num_reads_ / numControllers;
+    avgStats.num_writes_ = totalStats.num_writes_ / numControllers;
+
+    // Calculate the weighted average for avg_read_latency_
+    if (totalReadsAcrossAllControllers > 0) {
+        avgStats.avg_read_latency_ = totalWeightedLatencySum / totalReadsAcrossAllControllers;
+    } else {
+        // If there are no reads across all controllers, the average latency is 0
+        avgStats.avg_read_latency_ = 0.0;
+    }
+
+    return avgStats;
+}
+
 
 JedecDRAMSystem::JedecDRAMSystem(Config &config, const std::string &output_dir,
                                  std::function<void(uint64_t)> read_callback,

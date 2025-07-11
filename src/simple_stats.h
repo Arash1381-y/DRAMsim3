@@ -1,7 +1,6 @@
 #ifndef __SIMPLE_STATS_
 #define __SIMPLE_STATS_
 
-#include <fstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -9,7 +8,10 @@
 #include "configuration.h"
 #include "json.hpp"
 
+
 namespace dramsim3 {
+
+class FlexisimStats;
 
 class SimpleStats {
    public:
@@ -99,6 +101,8 @@ class SimpleStats {
     // outputs
     Json j_data_;
     std::vector<std::pair<std::string, std::string> > print_pairs_;
+
+    friend class FlexisimStats;
 };
 
 }  // namespace dramsim3

@@ -14,9 +14,9 @@ Controller::Controller(int channel, const Config &config, const Timing &timing)
     : channel_id_(channel),
       clk_(0),
       config_(config),
-      simple_stats_(config_, channel_id_),
+      flexisim_stats_(config_, channel_id_),
       channel_state_(config, timing),
-      cmd_queue_(channel_id_, config, channel_state_, simple_stats_),
+      cmd_queue_(channel_id_, config, channel_state_, flexisim_stats_),
       refresh_(config, channel_state_),
 #ifdef THERMAL
       thermal_calc_(thermal_calc),
@@ -47,10 +47,10 @@ std::pair<uint64_t, int> Controller::ReturnDoneTrans(uint64_t clk) {
     while (it != return_queue_.end()) {
         if (clk >= it->complete_cycle) {
             if (it->is_write) {
-                simple_stats_.Increment("num_writes_done");
+                flexisim_stats_.Increment("num_writes_done");
             } else {
-                simple_stats_.Increment("num_reads_done");
-                simple_stats_.AddValue("read_latency", clk_ - it->added_cycle);
+                flexisim_stats_.Increment("num_reads_done");
+                flexisim_stats_.AddValue("read_latency", clk_ - it->added_cycle);
             }
             auto pair = std::make_pair(it->addr, it->is_write);
             it = return_queue_.erase(it);
@@ -86,7 +86,7 @@ void Controller::ClockTick() {
             if (second_cmd.IsValid()) {
                 if (second_cmd.IsReadWrite() != cmd.IsReadWrite()) {
                     IssueCommand(second_cmd);
-                    simple_stats_.Increment("hbm_dual_cmds");
+                    flexisim_stats_.Increment("hbm_dual_cmds");
                 }
             }
         }
@@ -95,14 +95,14 @@ void Controller::ClockTick() {
     // power updates pt 1
     for (int i = 0; i < config_.ranks; i++) {
         if (channel_state_.IsRankSelfRefreshing(i)) {
-            simple_stats_.IncrementVec("sref_cycles", i);
+            flexisim_stats_.IncrementVec("sref_cycles", i);
         } else {
             bool all_idle = channel_state_.IsAllBankIdleInRank(i);
             if (all_idle) {
-                simple_stats_.IncrementVec("all_bank_idle_cycles", i);
+                flexisim_stats_.IncrementVec("all_bank_idle_cycles", i);
                 channel_state_.rank_idle_cycles[i] += 1;
             } else {
-                simple_stats_.IncrementVec("rank_active_cycles", i);
+                flexisim_stats_.IncrementVec("rank_active_cycles", i);
                 // reset
                 channel_state_.rank_idle_cycles[i] = 0;
             }
@@ -144,7 +144,7 @@ void Controller::ClockTick() {
     ScheduleTransaction();
     clk_++;
     cmd_queue_.ClockTick();
-    simple_stats_.Increment("num_cycles");
+    flexisim_stats_.Increment("num_cycles");
     return;
 }
 
@@ -160,7 +160,7 @@ bool Controller::WillAcceptTransaction(uint64_t hex_addr, bool is_write) const {
 
 bool Controller::AddTransaction(Transaction trans) {
     trans.added_cycle = clk_;
-    simple_stats_.AddValue("interarrival_latency", clk_ - last_trans_clk_);
+    flexisim_stats_.AddValue("interarrival_latency", clk_ - last_trans_clk_);
     last_trans_clk_ = clk_;
 
     if (trans.is_write) {
@@ -257,7 +257,7 @@ void Controller::IssueCommand(const Command &cmd) {
             exit(1);
         }
         auto wr_lat = clk_ - it->second.added_cycle + config_.write_delay;
-        simple_stats_.AddValue("write_latency", wr_lat);
+        flexisim_stats_.AddValue("write_latency", wr_lat);
         pending_wr_q_.erase(it);
     }
     // must update stats before states (for row hits)
@@ -280,8 +280,8 @@ Command Controller::TransToCommand(const Transaction &trans) {
 int Controller::QueueUsage() const { return cmd_queue_.QueueUsage(); }
 
 void Controller::PrintEpochStats() {
-    simple_stats_.Increment("epoch_num");
-    simple_stats_.PrintEpochStats();
+    flexisim_stats_.Increment("epoch_num");
+    flexisim_stats_.PrintEpochStats();
 #ifdef THERMAL
     for (int r = 0; r < config_.ranks; r++) {
         double bg_energy = simple_stats_.RankBackgroundEnergy(r);
@@ -292,7 +292,7 @@ void Controller::PrintEpochStats() {
 }
 
 void Controller::PrintFinalStats() {
-    simple_stats_.PrintFinalStats();
+    flexisim_stats_.PrintFinalStats();
 
 #ifdef THERMAL
     for (int r = 0; r < config_.ranks; r++) {
@@ -307,41 +307,49 @@ void Controller::UpdateCommandStats(const Command &cmd) {
     switch (cmd.cmd_type) {
         case CommandType::READ:
         case CommandType::READ_PRECHARGE:
-            simple_stats_.Increment("num_read_cmds");
+            flexisim_stats_.Increment("num_read_cmds");
             if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
                                            cmd.Bank()) != 0) {
-                simple_stats_.Increment("num_read_row_hits");
+                flexisim_stats_.Increment("num_read_row_hits");
             }
             break;
         case CommandType::WRITE:
         case CommandType::WRITE_PRECHARGE:
-            simple_stats_.Increment("num_write_cmds");
+            flexisim_stats_.Increment("num_write_cmds");
             if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
                                            cmd.Bank()) != 0) {
-                simple_stats_.Increment("num_write_row_hits");
+                flexisim_stats_.Increment("num_write_row_hits");
             }
             break;
         case CommandType::ACTIVATE:
-            simple_stats_.Increment("num_act_cmds");
+            flexisim_stats_.Increment("num_act_cmds");
             break;
         case CommandType::PRECHARGE:
-            simple_stats_.Increment("num_pre_cmds");
+            flexisim_stats_.Increment("num_pre_cmds");
             break;
         case CommandType::REFRESH:
-            simple_stats_.Increment("num_ref_cmds");
+            flexisim_stats_.Increment("num_ref_cmds");
             break;
         case CommandType::REFRESH_BANK:
-            simple_stats_.Increment("num_refb_cmds");
+            flexisim_stats_.Increment("num_refb_cmds");
             break;
         case CommandType::SREF_ENTER:
-            simple_stats_.Increment("num_srefe_cmds");
+            flexisim_stats_.Increment("num_srefe_cmds");
             break;
         case CommandType::SREF_EXIT:
-            simple_stats_.Increment("num_srefx_cmds");
+            flexisim_stats_.Increment("num_srefx_cmds");
             break;
         default:
             AbruptExit(__FILE__, __LINE__);
     }
 }
+
+
+
+FlexisimRunStat Controller::GetStatObject() {
+    return flexisim_stats_.GetFlexisimMemorySimStat();
+}
+
+
 
 }  // namespace dramsim3
