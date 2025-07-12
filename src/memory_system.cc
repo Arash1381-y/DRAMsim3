@@ -51,7 +51,7 @@ bool MemorySystem::IsIdle() const {
 }
 
 FlexisimRunStat MemorySystem::GetFlexisimStat() const {
-   return dram_system_->GetFlexisimStats();
+   return dram_system_->GetStat();
 }
 
 void MemorySystem::PrintStats() const { dram_system_->PrintStats(); }

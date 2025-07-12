@@ -8,7 +8,7 @@
 namespace dramsim3 {
 FlexisimStats::FlexisimStats(const Config& config, const int channel_id): SimpleStats(config, channel_id) {}
 
-FlexisimRunStat FlexisimStats::GetFlexisimMemorySimStat(){
+FlexisimRunStat FlexisimStats::GetStat(){
     UpdateFinalStats();
 
     FlexisimRunStat stats;

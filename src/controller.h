@@ -36,7 +36,7 @@ class Controller {
     void PrintFinalStats();
     void ResetStats() { flexisim_stats_.Reset(); }
     std::pair<uint64_t, int> ReturnDoneTrans(uint64_t clock);
-    FlexisimRunStat GetStatObject();
+    FlexisimRunStat GetStat();
 
     int channel_id_;
 

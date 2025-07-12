@@ -16,7 +16,7 @@ struct FlexisimRunStat {
 class FlexisimStats: public SimpleStats {
     public:
     FlexisimStats(const Config &config, int channel_id);
-    FlexisimRunStat GetFlexisimMemorySimStat();
+    FlexisimRunStat GetStat();
 
 
 

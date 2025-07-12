@@ -32,7 +32,7 @@ class BaseDRAMSystem {
                                        bool is_write) const = 0;
     virtual bool AddTransaction(uint64_t hex_addr, bool is_write) = 0;
     virtual bool IsIdle() const {return false;}
-    FlexisimRunStat GetFlexisimStats() const;
+    FlexisimRunStat GetStat() const;
     virtual void ClockTick() = 0;
     int GetChannel(uint64_t hex_addr) const;
 

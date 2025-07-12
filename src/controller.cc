@@ -346,8 +346,8 @@ void Controller::UpdateCommandStats(const Command &cmd) {
 
 
 
-FlexisimRunStat Controller::GetStatObject() {
-    return flexisim_stats_.GetFlexisimMemorySimStat();
+FlexisimRunStat Controller::GetStat() {
+    return flexisim_stats_.GetStat();
 }
 
 

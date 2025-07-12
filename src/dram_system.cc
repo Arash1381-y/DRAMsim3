@@ -96,10 +96,10 @@ void BaseDRAMSystem::RegisterCallbacks(
 }
 
 
-FlexisimRunStat BaseDRAMSystem::GetFlexisimStats() const{
-    FlexisimRunStat totalStats = {0.0, 0, 0, 0.0}; // Initialize with zeros
-    double totalWeightedLatencySum = 0.0; // For weighted average of latency
-    size_t totalReadsAcrossAllControllers = 0; // For weighted average denominator
+FlexisimRunStat BaseDRAMSystem::GetStat() const{
+    FlexisimRunStat totalStats = {0.0, 0, 0, 0.0};  // Initialize with zeros
+    double totalWeightedLatencySum = 0.0;           // For weighted average of latency
+    size_t totalReadsAcrossAllControllers = 0;      // For weighted average denominator
 
     size_t numControllers = ctrls_.size();
 
